@@ -101,7 +101,10 @@ app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 
 const themeFile = path.join(userDataPath, 'theme.txt');
 
-let mongod;
+// prevent unhandled background warnings/errors from displaying GUI popups
+process.on('uncaughtException', (err) => {
+  console.warn('Background exception handled:', err.message);
+});
 
 // starts local database server instance in background
 async function startEmbeddedMongo() {
@@ -110,6 +113,14 @@ async function startEmbeddedMongo() {
   if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
   }
+
+  // Remove stale lock file from previous ungraceful exits
+  const lockFile = path.join(dbDir, 'mongod.lock');
+  try {
+    if (fs.existsSync(lockFile)) {
+      fs.unlinkSync(lockFile);
+    }
+  } catch (e) { /* ignore */ }
 
   try {
     mongod = await MongoMemoryServer.create({
