@@ -14,9 +14,8 @@ export default function Dashboard({ documents, onSelectDocument, setActiveTab })
   const total = documents.length;
   const incoming = documents.filter(d => d.type === 'INCOMING').length;
   const outgoing = documents.filter(d => d.type === 'OUTGOING').length;
-  const internal = documents.filter(d => d.type === 'INTERNAL').length;
   
-  const pending = documents.filter(d => d.status === 'RECEIVED' || d.status === 'IN_PROGRESS').length;
+  const pending = documents.filter(d => d.status === 'RECEIVED' || d.status === 'HOLD').length;
 
   
   // Weekly Load Data: Calculate real-time counts from the documents database

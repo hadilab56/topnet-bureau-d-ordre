@@ -18,7 +18,6 @@ function createWindow() {
     icon: path.join(__dirname, 'public/app-icon.ico')
   });
 
-  // load the index.html from vite's build folder
   mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
 
   mainWindow.on('closed', function () {

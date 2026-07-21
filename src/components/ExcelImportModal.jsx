@@ -112,7 +112,7 @@ export default function ExcelImportModal({ headers, rows, onImport, onCancel, cu
       };
 
       // map recognized types if they are somewhat different
-      if (!['INCOMING', 'OUTGOING', 'INTERNAL'].includes(newDoc.type)) newDoc.type = defaults.type;
+      if (!['INCOMING', 'OUTGOING'].includes(newDoc.type)) newDoc.type = defaults.type;
 
       const deptExists = DEPARTMENTS.some(d => d.id === newDoc.recipientDept);
       if (!deptExists) newDoc.recipientDept = defaults.recipientDept;
@@ -201,7 +201,6 @@ export default function ExcelImportModal({ headers, rows, onImport, onCancel, cu
               <select className="form-control" value={defaults.type} onChange={(e) => handleDefaultChange('type', e.target.value)} style={{ padding: '6px 10px', height: 'auto', fontSize: '13px' }}>
                 <option value="INCOMING">Arrivée</option>
                 <option value="OUTGOING">Départ</option>
-                <option value="INTERNAL">Interne</option>
               </select>
             </div>
 

@@ -45,7 +45,7 @@ const historySchema = new mongoose.Schema({
 const courrierSchema = new mongoose.Schema({
   id: { type: String, unique: true, required: true },
   reference: { type: String },
-  type: { type: String, enum: ['INCOMING', 'OUTGOING', 'INTERNAL'], required: true },
+  type: { type: String, enum: ['INCOMING', 'OUTGOING'], required: true },
   date: { type: Date, required: true },
   sender: { type: String },
   senderContact: { type: String },
@@ -54,10 +54,13 @@ const courrierSchema = new mongoose.Schema({
   recipientName: { type: String },
   subject: { type: String },
   category: { type: String, required: true },
-  status: { type: String, enum: ['RECEIVED', 'NOT_PICKED', 'DELIVERED'], default: 'RECEIVED' },
+  status: { type: String, enum: ['RECEIVED', 'HOLD', 'DELIVERED'], default: 'RECEIVED' },
   fileName: { type: String },
   fileSize: { type: String },
   fileData: { type: String }, // stores file attachment base64 payload if any
+  departReference: { type: String }, // linked Départ reference
+  departFileName: { type: String },  // linked Départ file name
+  departFileData: { type: String },  // linked Départ file data (base64)
   comments: [commentSchema],
   history: [historySchema],
   createdBy: { type: String },

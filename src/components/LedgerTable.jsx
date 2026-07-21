@@ -224,7 +224,6 @@ export default function LedgerTable({ documents, onSelectDocument, onDeleteDocum
             <option value="ALL">Tous les types</option>
             <option value="INCOMING">Arrivée</option>
             <option value="OUTGOING">Départ</option>
-            <option value="INTERNAL">Interne</option>
           </select>
         </div>
 
@@ -294,10 +293,10 @@ export default function LedgerTable({ documents, onSelectDocument, onDeleteDocum
                     <td style={{ whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>{formatDate(doc.date)}</td>
                     <td>
                       <span className="badge" style={{
-                        backgroundColor: doc.type === 'INCOMING' ? 'rgba(0, 120, 212, 0.08)' : doc.type === 'OUTGOING' ? 'rgba(16, 124, 65, 0.08)' : 'rgba(243, 156, 18, 0.08)',
-                        color: doc.type === 'INCOMING' ? '#0078d4' : doc.type === 'OUTGOING' ? '#107c41' : '#f39c12',
+                        backgroundColor: doc.type === 'INCOMING' ? 'rgba(0, 120, 212, 0.08)' : 'rgba(16, 124, 65, 0.08)',
+                        color: doc.type === 'INCOMING' ? '#0078d4' : '#107c41',
                       }}>
-                        {doc.type === 'INCOMING' ? 'Arrivée' : doc.type === 'OUTGOING' ? 'Départ' : 'Interne'}
+                        {doc.type === 'INCOMING' ? 'Arrivée' : 'Départ'}
                       </span>
                     </td>
                     <td style={{ fontWeight: '500' }}>{doc.sender}</td>

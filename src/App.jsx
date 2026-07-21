@@ -128,9 +128,8 @@ export default function App() {
 
   // figure out the next ref number for each type so we don't repeat ourselves
   const [nextSeq, setNextSeq] = useState({
-    INCOMING: 5,
-    OUTGOING: 2,
-    INTERNAL: 2
+    INCOMING: 1,
+    OUTGOING: 1
   });
 
   // save to disk whenever something changes (skip the current user — no auto-login)
@@ -157,18 +156,9 @@ export default function App() {
       });
     const maxOutgoing = outgoingSeqs.length > 0 ? Math.max(...outgoingSeqs) : 0;
 
-    const internalSeqs = documents
-      .filter(d => d.type === 'INTERNAL')
-      .map(d => {
-        const match = d.reference.match(/INT-(\d+)$/);
-        return match ? parseInt(match[1]) : 0;
-      });
-    const maxInternal = internalSeqs.length > 0 ? Math.max(...internalSeqs) : 0;
-
     setNextSeq({
       INCOMING: maxIncoming + 1,
-      OUTGOING: maxOutgoing + 1,
-      INTERNAL: maxInternal + 1
+      OUTGOING: maxOutgoing + 1
     });
   }, [documents]);
 

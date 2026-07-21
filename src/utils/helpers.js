@@ -21,13 +21,13 @@ export const CATEGORIES = [
 
 
 export const STATUSES = [
-  { id: 'RECEIVED', name: 'Reçu', color: '#0078d4', bg: '#deecf9' },
-  { id: 'NOT_PICKED', name: 'Non récupéré', color: '#c17f00', bg: '#fff4ce' },
-  { id: 'DELIVERED', name: 'Sorti', color: '#107c41', bg: '#dfefe3' }
+  { id: 'RECEIVED', name: 'Reçu (Entrée)', color: '#0078d4', bg: '#deecf9' },
+  { id: 'HOLD', name: 'En Attente de Départ (Hold)', color: '#d9534f', bg: '#fdf2f2' },
+  { id: 'DELIVERED', name: 'Sorti / Traité', color: '#107c41', bg: '#dfefe3' }
 ];
 
 export const generateReference = (type, sequenceNum, year = new Date().getFullYear()) => {
-  const code = type === 'INCOMING' ? 'ARR' : type === 'OUTGOING' ? 'DEP' : 'INT';
+  const code = type === 'INCOMING' ? 'ARR' : 'DEP';
   const paddedSeq = String(sequenceNum).padStart(4, '0');
   return `TNET-BO/${year}/${code}-${paddedSeq}`;
 };

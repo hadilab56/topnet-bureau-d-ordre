@@ -134,8 +134,15 @@ export default function DetailViewer({ document, onUpdateDocument, onDeleteDocum
   const handleRoute = (e) => {
     e.preventDefault();
 
+    let finalStatus = targetStatus;
+    // Rule: For Arrivée (INCOMING) documents, setting status to DELIVERED without a Départ file/reference automatically sets status to HOLD
+    if (document.type === 'INCOMING' && targetStatus === 'DELIVERED' && !document.departFileData && !document.departReference) {
+      finalStatus = 'HOLD';
+      showAlert('⚠️ Aucun courrier de Départ n\'est rattaché à ce dossier d\'Arrivée. Le statut a été automatiquement placé EN ATTENTE (HOLD).', 'Statut mis en Hold', 'warning');
+    }
+
     const isDeptChanged = targetDept !== document.recipientDept;
-    const isStatusChanged = targetStatus !== document.status;
+    const isStatusChanged = finalStatus !== document.status;
 
     if (!isDeptChanged && !isStatusChanged && !routingNote.trim()) {
       showAlert('Veuillez modifier la direction, le statut, ou ajouter une note de transmission.', 'Attention', 'warning');
@@ -157,7 +164,7 @@ export default function DetailViewer({ document, onUpdateDocument, onDeleteDocum
     if (isStatusChanged) {
       updatedHistory.push({
         date: new Date().toISOString(),
-        action: `Modification du statut : ${getStatusDetails(targetStatus).name}`,
+        action: `Modification du statut : ${getStatusDetails(finalStatus).name}`,
         user: username
       });
     }
@@ -174,14 +181,53 @@ export default function DetailViewer({ document, onUpdateDocument, onDeleteDocum
     const updatedDoc = {
       ...document,
       recipientDept: targetDept,
-      status: targetStatus,
+      status: finalStatus,
       comments: updatedComments,
       history: updatedHistory
     };
 
     onUpdateDocument(updatedDoc);
     setRoutingNote('');
-    showAlert('Workflow de routage mis à jour avec succès.', 'Succès', 'success');
+    if (finalStatus !== 'HOLD') {
+      showAlert('Workflow de routage mis à jour avec succès.', 'Succès', 'success');
+    }
+  };
+
+  // Handler for attaching a Départ file to an Arrivée document
+  const handleAttachDepartFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const updatedDoc = {
+        ...document,
+        departFileName: file.name,
+        departFileData: e.target.result,
+        status: 'DELIVERED', // automatically mark as DELIVERED / Sorti / Traité once Départ file is attached!
+        history: [
+          ...document.history,
+          {
+            date: new Date().toISOString(),
+            action: `Rattachement du courrier de Départ (${file.name}) -> Statut mis à jour : Sorti / Traité`,
+            user: currentUser.fullName
+          }
+        ]
+      };
+      onUpdateDocument(updatedDoc);
+      showAlert(`Le fichier de Départ "${file.name}" a été rattaché avec succès. Le statut du dossier est maintenant "Sorti / Traité".`, 'Succès', 'success');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handler for downloading linked Départ file
+  const handleDownloadDepartFile = () => {
+    if (document.departFileData) {
+      const a = window.document.createElement('a');
+      a.href = document.departFileData;
+      a.download = document.departFileName || 'Courrier_Depart.pdf';
+      window.document.body.appendChild(a);
+      a.click();
+      window.document.body.removeChild(a);
+    }
   };
 
   // add a simple text comment to the doc
@@ -285,6 +331,29 @@ export default function DetailViewer({ document, onUpdateDocument, onDeleteDocum
         </div>
       </div>
 
+      {/* Warning banner if Arrivée document has no Départ file attached */}
+      {document.type === 'INCOMING' && !document.departFileData && !document.departReference && (
+        <div style={{
+          backgroundColor: '#fff3cd',
+          border: '1px solid #ffeeba',
+          color: '#856404',
+          padding: '14px 20px',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '500' }}>
+            <AlertIcon size={20} style={{ color: '#856404', flexShrink: 0 }} />
+            <span>
+              <strong>Liaison obligatoire :</strong> Tout courrier d'Arrivée nécessite la liaison d'un courrier de <strong>Départ</strong> lors de son traitement/retrait. Sans fichier de Départ, le statut reste <strong>EN ATTENTE (HOLD)</strong>.
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="split-container">
 
         {/* left column: details and tabs */}
@@ -309,9 +378,8 @@ export default function DetailViewer({ document, onUpdateDocument, onDeleteDocum
                   <div className="form-group">
                     <label className="form-label" style={{ fontSize: '12px' }}>Type de courrier</label>
                     <select className="form-control" value={editType} onChange={e => setEditType(e.target.value)} style={{ fontSize: '14px' }}>
-                      <option value="INCOMING">Arrivée (Externe)</option>
-                      <option value="OUTGOING">Départ (Sortant)</option>
-                      <option value="INTERNAL">Interne</option>
+                      <option value="INCOMING">Arrivée (Entrée)</option>
+                      <option value="OUTGOING">Départ (Sortie)</option>
                     </select>
                   </div>
                 </div>
@@ -368,7 +436,7 @@ export default function DetailViewer({ document, onUpdateDocument, onDeleteDocum
                 <div>
                   <div style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '4px' }}>Type de document</div>
                   <strong style={{ textTransform: 'capitalize' }}>
-                    {document.type === 'INCOMING' ? 'Arrivée (Externe)' : document.type === 'OUTGOING' ? 'Départ (Sortant)' : 'Interne'}
+                    {document.type === 'INCOMING' ? 'Arrivée (Entrée)' : 'Départ (Sortie)'}
                   </strong>
                 </div>
 
@@ -736,6 +804,88 @@ export default function DetailViewer({ document, onUpdateDocument, onDeleteDocum
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '280px', lineHeight: '1.6' }}>
                 Ce courrier a été enregistré sans pièce jointe numérique.
               </p>
+            </div>
+          )}
+
+          {/* Linked Départ file section for Arrivée (INCOMING) documents */}
+          {document.type === 'INCOMING' && (
+            <div className="card" style={{ padding: '20px', border: '1px solid var(--surface-border)', marginTop: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--primary-dark)', margin: 0 }}>
+                  📤 Courrier de Départ (Réponse / Sortie)
+                </h4>
+                {document.departFileName ? (
+                  <span className="badge" style={{ backgroundColor: '#dfefe3', color: '#107c41', fontSize: '12px' }}>
+                    ✓ Départ Rattaché
+                  </span>
+                ) : (
+                  <span className="badge" style={{ backgroundColor: '#fdf2f2', color: '#d9534f', fontSize: '12px' }}>
+                    ⚠️ Requis pour validation
+                  </span>
+                )}
+              </div>
+
+              {document.departFileName ? (
+                <div style={{
+                  padding: '12px 16px',
+                  backgroundColor: 'var(--bg-main)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--surface-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <FileTextIcon size={22} style={{ color: 'var(--primary)' }} />
+                    <div>
+                      <div style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text-main)' }}>{document.departFileName}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Fichier de Départ rattaché</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleDownloadDepartFile}
+                    style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', gap: '6px', alignItems: 'center' }}
+                  >
+                    <DownloadIcon size={14} /> Télécharger
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0 }}>
+                    Rattachez le fichier de Départ officiel pour valider la sortie de ce courrier et passer le statut à <strong>Sorti / Traité</strong>.
+                  </p>
+                  <label
+                    htmlFor="depart-file-input"
+                    className="btn btn-accent"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '10px 16px',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      marginTop: '4px'
+                    }}
+                  >
+                    <FileTextIcon size={16} /> Rattacher le Fichier de Départ
+                  </label>
+                  <input
+                    type="file"
+                    id="depart-file-input"
+                    style={{ display: 'none' }}
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleAttachDepartFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

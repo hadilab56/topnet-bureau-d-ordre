@@ -147,14 +147,6 @@ export default function RegistryForm({ onAddDocument, nextSeq: _nextSeq, onCance
           >
             Départ
           </button>
-          <button
-            type="button"
-            className={`btn ${type === 'INTERNAL' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setType('INTERNAL')}
-            style={{ padding: '8px 16px', fontSize: '13px' }}
-          >
-            Interne
-          </button>
         </div>
       </div>
 
