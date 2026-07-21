@@ -67,24 +67,8 @@ const courrierSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 const Courrier = mongoose.model('Courrier', courrierSchema);
 
-// schema for Oracle Invoices
-const factureOracleSchema = new mongoose.Schema({
-  id: { type: String, unique: true, required: true },
-  numeroFacture: { type: String, required: true },
-  dateFacture: { type: Date, required: true },
-  montant: { type: String },
-  fournisseur: { type: String },
-  statut: { type: String, enum: ['SAISIE', 'VALIDEE', 'REJETEE'], default: 'SAISIE' },
-  createdBy: { type: String },
-  createdByUsername: { type: String },
-  createdAt: { type: Date, default: Date.now }
-});
-
-const FactureOracle = mongoose.model('FactureOracle', factureOracleSchema);
-
 module.exports = {
   connectDB,
   User,
-  Courrier,
-  FactureOracle
+  Courrier
 };

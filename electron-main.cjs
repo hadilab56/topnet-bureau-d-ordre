@@ -86,7 +86,7 @@ function createWindow() {
 const os = require('os');
 const fs = require('fs');
 const { ipcMain } = require('electron');
-const { connectDB, User, Courrier, FactureOracle } = require('./db.cjs');
+const { connectDB, User, Courrier } = require('./db.cjs');
 
 const userDataPath = path.join(
   process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
@@ -144,7 +144,6 @@ ipcMain.handle('store-read', async () => {
 
     const dbUsers = await User.find({}).lean();
     const dbCourriers = await Courrier.find({}).sort({ date: -1 }).lean();
-    const dbFactures = await FactureOracle.find({}).sort({ createdAt: -1 }).lean();
 
     let theme = 'light';
     try {
@@ -156,13 +155,11 @@ ipcMain.handle('store-read', async () => {
     // Map _id object to string for react frontend serializability
     const formattedUsers = dbUsers.map(u => ({ ...u, _id: u._id.toString() }));
     const formattedCourriers = dbCourriers.map(d => ({ ...d, _id: d._id.toString() }));
-    const formattedFactures = dbFactures.map(f => ({ ...f, _id: f._id.toString() }));
 
     return {
       documents: formattedCourriers,
       users: formattedUsers,
-      theme,
-      factures: formattedFactures
+      theme
     };
   } catch (e) {
     console.error('store-read failed:', e.message);
@@ -209,22 +206,6 @@ ipcMain.handle('store-write', async (_event, data) => {
         };
       });
       await Courrier.insertMany(formattedDocs);
-    }
-    if (data.factures) {
-      // Clear out the collection and reload
-      await FactureOracle.deleteMany({});
-      const formattedFactures = data.factures.map(f => {
-        const docCopy = { ...f };
-        if (docCopy._id && typeof docCopy._id === 'object') {
-          delete docCopy._id;
-        }
-        return {
-          ...docCopy,
-          dateFacture: f.dateFacture ? new Date(f.dateFacture) : new Date(),
-          createdAt: f.createdAt ? new Date(f.createdAt) : new Date()
-        };
-      });
-      await FactureOracle.insertMany(formattedFactures);
     }
     if (data.theme) {
       if (!fs.existsSync(userDataPath)) fs.mkdirSync(userDataPath, { recursive: true });

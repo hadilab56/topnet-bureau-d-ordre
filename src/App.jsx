@@ -15,7 +15,6 @@ import RegistryForm from './components/RegistryForm';
 import DetailViewer from './components/DetailViewer';
 import UserManagement from './components/UserManagement';
 import CustomModal from './components/CustomModal';
-import FactureOracleView from './components/FactureOracleView';
 import appLogo from './assets/logo.png';
 
 // save data to a file when running in electron, fall back to localStorage in the browser
@@ -39,7 +38,6 @@ export default function App() {
   const [theme, setTheme] = useState('light');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [documents, setDocuments] = useState(INITIAL_DOCUMENTS);
-  const [factures, setFactures] = useState([]);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [users, setUsers] = useState([
     { username: 'admin', fullName: 'Administrateur BO', password: 'admin', role: 'ADMIN' },
@@ -91,7 +89,6 @@ export default function App() {
         if (saved.documents) setDocuments(saved.documents);
         if (saved.users) setUsers(saved.users);
         if (saved.theme) setTheme(saved.theme);
-        if (saved.factures) setFactures(saved.factures);
         // don't restore who was logged in — user has to re-enter credentials every time
       }
       setStoreLoaded(true);
@@ -139,8 +136,8 @@ export default function App() {
   // save to disk whenever something changes (skip the current user — no auto-login)
   useEffect(() => {
     if (!storeLoaded) return;
-    store.write({ documents, users, theme, factures });
-  }, [documents, users, theme, factures, storeLoaded]);
+    store.write({ documents, users, theme });
+  }, [documents, users, theme, storeLoaded]);
 
   useEffect(() => {
     // recalculate sequence numbers from what's actually in the list
@@ -190,32 +187,13 @@ export default function App() {
   const handleAddDocument = (newDoc) => {
     setDocuments(prev => [newDoc, ...prev]);
     setActiveTab('ledger');
-    setSelectedDocument(newDoc); // jump straight to the new courrier after saving
-  };
-
-  const handleAddFacture = (newFacture) => {
-    setFactures(prev => [newFacture, ...prev]);
-    showAlert('Facture Oracle enregistrée avec succès.', 'Succès', 'success');
-  };
-
-  const handleAddFactures = (newFactures) => {
-    setFactures(prev => [...newFactures, ...prev]);
+    setSelectedDocument(newDoc);
   };
 
   const handleAddDocuments = (newDocs) => {
     setDocuments(prev => [...newDocs, ...prev]);
     setActiveTab('ledger');
     setSelectedDocument(null);
-  };
-
-  const handleUpdateFacture = (updatedFacture) => {
-    setFactures(prev => prev.map(f => f.id === updatedFacture.id ? updatedFacture : f));
-    showAlert('Facture Oracle modifiée avec succès.', 'Succès', 'success');
-  };
-
-  const handleDeleteFacture = (factureId) => {
-    setFactures(prev => prev.filter(f => f.id !== factureId));
-    showAlert('Facture Oracle supprimée.', 'Information', 'info');
   };
 
   const handleUpdateDocument = (updatedDoc) => {
@@ -285,17 +263,7 @@ export default function App() {
                   </div>
                 </li>
               )}
-              {currentUser.role !== 'READER' && (
-                <li>
-                  <div
-                    className={`menu-item ${activeTab === 'factures' ? 'active' : ''}`}
-                    onClick={() => { setActiveTab('factures'); setSelectedDocument(null); }}
-                  >
-                    <FileTextIcon size={20} />
-                    <span>Factures Oracle</span>
-                  </div>
-                </li>
-              )}
+
               {currentUser.role === 'ADMIN' && (
                 <li>
                   <div
@@ -467,18 +435,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'factures' && (
-            <FactureOracleView
-              factures={factures}
-              onAddFacture={handleAddFacture}
-              onAddFactures={handleAddFactures}
-              onUpdateFacture={handleUpdateFacture}
-              onDeleteFacture={handleDeleteFacture}
-              currentUser={currentUser}
-              showAlert={showAlert}
-              showConfirm={showConfirm}
-            />
-          )}
+
 
           {activeTab === 'settings' && (
             <div className="card animate-fade-in" style={{ padding: '32px' }}>
