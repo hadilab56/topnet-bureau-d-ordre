@@ -17,20 +17,61 @@ import UserManagement from './components/UserManagement';
 import CustomModal from './components/CustomModal';
 import appLogo from './assets/logo.png';
 
-// save data to a file when running in electron, fall back to localStorage in the browser
-const isElectron = typeof window !== 'undefined' && window.electronAPI?.storeRead;
+// save data to a file when running in WebView2, fall back to localStorage in the browser
+const pendingPromises = new Map();
+let messageIdCounter = 0;
+
+if (typeof window !== 'undefined' && window.chrome?.webview) {
+  window.chrome.webview.addEventListener('message', event => {
+    const { id, data, error } = event.data;
+    if (pendingPromises.has(id)) {
+      const { resolve, reject } = pendingPromises.get(id);
+      pendingPromises.delete(id);
+      if (error) reject(new Error(error));
+      else resolve(data);
+    }
+  });
+}
+
+const callHost = (action, data) => {
+  if (typeof window === 'undefined' || !window.chrome?.webview?.postMessage) {
+    return Promise.reject(new Error("WebView2 not available"));
+  }
+  const id = ++messageIdCounter;
+  return new Promise((resolve, reject) => {
+    pendingPromises.set(id, { resolve, reject });
+    window.chrome.webview.postMessage({ id, action, data });
+  });
+};
 
 const store = {
   read: async () => {
-    if (isElectron) return window.electronAPI.storeRead();
+    if (typeof window !== 'undefined' && window.chrome?.webview?.postMessage) {
+      try {
+        return await callHost('store-read');
+      } catch (err) {
+        console.error("store.read failed:", err);
+        return null;
+      }
+    }
     try {
       const raw = localStorage.getItem('topnet-bo-store');
       return raw ? JSON.parse(raw) : null;
     } catch { return null; }
   },
   write: async (data) => {
-    if (isElectron) return window.electronAPI.storeWrite(data);
-    try { localStorage.setItem('topnet-bo-store', JSON.stringify(data)); } catch { /* ignore */ }
+    if (typeof window !== 'undefined' && window.chrome?.webview?.postMessage) {
+      try {
+        return await callHost('store-write', data);
+      } catch (err) {
+        console.error("store.write failed:", err);
+        return false;
+      }
+    }
+    try {
+      localStorage.setItem('topnet-bo-store', JSON.stringify(data));
+      return true;
+    } catch { return false; }
   }
 };
 
